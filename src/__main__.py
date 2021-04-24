@@ -3,6 +3,9 @@ import os, sys, glob
 from lexer import Lexer
 from parse import Parser
 
+# Compiler version
+__version__ = "0.1.0"
+
 # Buffer for storing the B program's source code.
 buf = ""
 
@@ -20,6 +23,7 @@ options = {
     "ob":    "out",      # The output file's base name.
     "oe":    "exe",      # The output file's extension name.
     "S":     False,      # Should the assembly output files be saved?
+    "v":     False,      # Display compiler version info?
     "files": []          # The input file name(s).
     }
 
@@ -52,9 +56,16 @@ while a:
         options["S"] = True
         a = a[1:]
 
+    elif a[0] == "-v":
+        options["v"] = True
+        a = a[1:]
+
     else:
         options["files"].append(a[0])
         a = a[1:]
+
+if options["v"]:
+    print("B Compiler Version {}\n".format(__version__))
 
 # We need to compile something or there's no reason to continue.
 if not options["files"]:

@@ -5,7 +5,7 @@ rem Set the title of the prompt to batch file's name.
 title build-test.cmd
 
 rem Build each b test program.
-for %%i in (test*.b) do py -3 ../src/__main__.py -f win32 -S -o %%~ni.exe %%i
+for %%i in (test*.b) do "../bin/b" -f win32 -v -o %%~ni.exe %%i
 
 rem Test each b test program.
 for %%i in (test*.exe) do (
