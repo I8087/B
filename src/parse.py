@@ -6,7 +6,7 @@ from rpn import RPN
 
 class Parser():
 
-    def __init__(self, inp, linp):
+    def __init__(self, inp, linp, options):
 
         self.inp = inp
         self.linp = linp

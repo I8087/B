@@ -4,7 +4,7 @@ import string
 
 class Lexer():
 
-    def __init__(self, inp):
+    def __init__(self, inp, options):
 
         self.line = 1
         self.char = 1
@@ -52,7 +52,7 @@ class Lexer():
         n = ""
         l = self.line
         c = self.char
-        test = string.digits+string.ascii_letters+"_@"
+        test = string.digits+string.ascii_letters+"_@."
 
         while self.peek() in test:
             if self.peek() == "@":
