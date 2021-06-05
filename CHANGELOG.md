@@ -10,4 +10,4 @@
 - Initial release committed.
 
 
-[Unreleased]: https://github.com/I8087/B/compare/v0.1.0...master
+[Unreleased]: https://github.com/I8087/B/compare/v0.1.0...main
