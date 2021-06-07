@@ -1,7 +1,4 @@
-putchar(char) {
-
-    /* Declare win32 API functions. */
-    extrn GetStdHandle@4, WriteFile@20;
+putchar(chr) {
 
     /* Declare our local variables. */
     auto obytes, stdout, c, n, i;
@@ -11,12 +8,12 @@ putchar(char) {
 
     /* Check for null characters. */
     while (i < 4) {
-        if ((char >> (3-i)*8) & 0xFF) {
+        if ((chr >> (3-i)*8) & 0xFF) {
             c <<= 8;
             n++;
         }
 
-        c +=  (char >> (3-i)*8) & 0xFF;
+        c +=  (chr >> (3-i)*8) & 0xFF;
 
         i++;
     } 
@@ -24,8 +21,8 @@ putchar(char) {
     /*c <<= (4-n)*8;*/
 
     /* Get the stdout's file handle. */
-    stdout = GetStdHandle@4(-11);
+    stdout = GetStdHandle(-11);
 
     /* Write to the stdout.*/
-    WriteFile@20(stdout, &c, n, &obytes, 0);
+    WriteFile(stdout, &c, n, &obytes, 0);
 }

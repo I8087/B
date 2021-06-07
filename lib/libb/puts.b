@@ -1,8 +1,5 @@
 puts(str) {
 
-    /* Declare win32 API functions. */
-    extrn GetStdHandle@4, WriteFile@20;
-
     /* Declare our local variables. */
     auto stdout, obytes, i;
 
@@ -10,8 +7,8 @@ puts(str) {
     i = strlen(str);
 
     /* Get the stdout's file handle. */
-    stdout = GetStdHandle@4(-11);
+    stdout = GetStdHandle(-11);
 
     /* Write to the stdout.*/
-    WriteFile@20(stdout, str, i, &obytes, 0);
+    WriteFile(stdout, str, i, &obytes, 0);
 }

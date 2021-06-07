@@ -6,6 +6,7 @@
 
 ### Changed
 - Changed the way the compiler handles build formats.
+- Various changes and additions to the standard library.
 
 ## 0.1.0 - 2021-04-24
 ### Added
