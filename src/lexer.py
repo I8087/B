@@ -263,7 +263,7 @@ class Lexer():
                 self.newline()
 
             # Handle keywords.
-            elif self.peek(6) in ("default",):
+            elif self.peek(7) in ("default", "stdcall"):
                 self.add(self.peek(7).upper())
                 self.move(7)
 

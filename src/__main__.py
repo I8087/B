@@ -13,7 +13,10 @@ buf = ""
 b_dir = os.path.dirname(os.path.abspath(os.path.dirname(sys.argv[0])))
 
 # Get the CPU's architecture.
-_bit = platform.architecture()[0][:2]
+_bit = int(platform.architecture()[0][:2])
+
+# Get the number of bytes in one word.
+_bytes = _bit // 8
 
 # Get the CPU's machine name.
 _cpu = platform.machine()
@@ -30,16 +33,17 @@ else:
 
 # A dictionary of options used by the compiler.
 options = {
-    "f":     _sys+_bit,    # The file format. Based on os and cpu.
-    "o":     "out.exe",  # The output file name.
-    "ob":    "out",      # The output file's base name.
-    "oe":    "exe",      # The output file's extension name.
-    "S":     False,      # Should the assembly output files be saved?
-    "v":     False,      # Display compiler version info?
-    "files": [],         # The input file name(s).
-    "sys": _sys,         # Operating system
-    "cpu": _cpu,         # CPU machine name
-    "bit": int(_bit)     # CPU bits
+    "f":     _sys+str(_bit),# The file format. Based on os and cpu.
+    "o":     "out.exe",     # The output file name.
+    "ob":    "out",         # The output file's base name.
+    "oe":    "exe",         # The output file's extension name.
+    "S":     False,         # Should the assembly output files be saved?
+    "v":     False,         # Display compiler version info?
+    "files": [],            # The input file name(s).
+    "sys":   _sys,          # Operating system
+    "cpu":   _cpu,          # CPU machine name
+    "bit":   _bit,          # CPU bits
+    "bytes": _bytes         # Number of bytes in one word.
     }
 
 # Get a copy of the command line arguments.
@@ -85,8 +89,9 @@ while a:
 # Get a glob of all the files in the B standard library.
 # NOTE: We'll need to do this after we go throught the command line.
 lib_glob = os.path.join(b_dir, "lib", "libb", "*.b")
+lib_h_glob = os.path.join(b_dir, "lib", "libb", "*.h")
 sys_glob = os.path.join(b_dir, "lib", options["f"], "*.b")
-
+sys_h_glob = os.path.join(b_dir, "lib", options["f"], "*.h")
 if options["v"]:
     print("B Compiler Version {}\n".format(__version__))
 
@@ -94,6 +99,26 @@ if options["v"]:
 if not options["files"]:
     print("No input file specified!")
     exit(-100)
+
+# Add each system library header file to the buffer.
+for i in [f for f in glob.glob(sys_h_glob)]:
+    try:
+        with open(i, "r") as f:
+            buf += f.read()
+
+    except:
+        print("Could not open library header file '{}'!".format(i))
+        exit(-1)
+
+# Add each library header file to the buffer.
+for i in [f for f in glob.glob(lib_h_glob)]:
+    try:
+        with open(i, "r") as f:
+            buf += f.read()
+
+    except:
+        print("Could not open library header file '{}'!".format(i))
+        exit(-1)
 
 # Add each file to the buffer.
 for i in options["files"]:
@@ -106,8 +131,8 @@ for i in options["files"]:
         print("Could not open input file '{}'!".format(i))
         exit(-1)
 
-# Add each library file to the buffer.
-for i in [f for f in glob.glob(lib_glob)]:
+# Add each system library file to the buffer.
+for i in [f for f in glob.glob(sys_glob)]:
     try:
         with open(i, "r") as f:
             buf += f.read()
@@ -116,8 +141,8 @@ for i in [f for f in glob.glob(lib_glob)]:
         print("Could not open library file '{}'!".format(i))
         exit(-1)
 
-# Add each system library file to the buffer.
-for i in [f for f in glob.glob(sys_glob)]:
+# Add each library file to the buffer.
+for i in [f for f in glob.glob(lib_glob)]:
     try:
         with open(i, "r") as f:
             buf += f.read()

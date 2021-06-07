@@ -1,6 +1,8 @@
 ## [Unreleased]
 ### Added
 - Added system libraries.
+- Added function prototyping and header files.
+- Added keywords for function calling convention.
 
 ### Changed
 - Changed the way the compiler handles build formats.

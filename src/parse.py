@@ -11,6 +11,9 @@ class Parser():
         self.inp = inp
         self.linp = linp
 
+        # Save the compiler options and flags.
+        self.options = options
+
         # The output code buffer.
         self.outp = ["bits 32", ""]
 
@@ -22,11 +25,16 @@ class Parser():
         # A list of all names defined, including variables and functions.
         self.names = []
 
-        # A dictionary of functions with the number of parameters it takes.
+        # A dictionary of functions and their properties.
+        # name = function name
+        # call = function calling convention
+        # prototype = True if this is a prototype function, otherwise false.
+        # param = The number of parameters this function takes.
+        # params = A list of all parameter names in this function.
         self.funcs = {}
 
         # A list of statements, including their start and stop points.
-        self.compounds = []       
+        self.compounds = []
 
         # A list of generated labels for conditions.
         self.l = -1
@@ -43,9 +51,14 @@ class Parser():
         self.extrn = []
 
         # Size of a word on the machine in 8-bit bytes.
-        self.word = 4
+        if self.options["f"] in ("win32", "lin32"):
+            self.word = 4
+        elif self.options["f"] in ("win64", "lin64"):
+            self.word = 8
+        else:
+            self.error(75)
 
-        self.format = "win32"
+        self.format = self.options["f"]
 
         # Are we walking through a function right now?
         self.in_func = False
@@ -57,28 +70,68 @@ class Parser():
         self.next_simple = False
 
     def a(self):
-        return "eax"
+        if self.options["f"] in ("win32", "lin32"):
+            return "eax"
+        elif self.options["f"] in ("win64", "lin64"):
+            return "rax"
+        else:
+            self.error(45)
 
     def b(self):
-        return "ebx"
+        if self.options["f"] in ("win32", "lin32"):
+            return "ebx"
+        elif self.options["f"] in ("win64", "lin64"):
+            return "rbx"
+        else:
+            self.error(45)
 
     def c(self):
-        return "ecx"
+        if self.options["f"] in ("win32", "lin32"):
+            return "ecx"
+        elif self.options["f"] in ("win64", "lin64"):
+            return "rcx"
+        else:
+            self.error(45)
 
     def d(self):
-        return "edx"
+        if self.options["f"] in ("win32", "lin32"):
+            return "edx"
+        elif self.options["f"] in ("win64", "lin64"):
+            return "rdx"
+        else:
+            self.error(45)
 
     def bp(self):
-        return "ebp"
+        if self.options["f"] in ("win32", "lin32"):
+            return "ebp"
+        elif self.options["f"] in ("win64", "lin64"):
+            return "rbp"
+        else:
+            self.error(45)
 
     def sp(self):
-        return "esp"
+        if self.options["f"] in ("win32", "lin32"):
+            return "esp"
+        elif self.options["f"] in ("win64", "lin64"):
+            return "rsp"
+        else:
+            self.error(45)
 
     def sys_data(self):
-        return "dw"
+        if self.options["f"] in ("win32", "lin32"):
+            return "dd"
+        elif self.options["f"] in ("win64", "lin64"):
+            return "dq"
+        else:
+            self.error(45)
 
     def sys_prefix(self):
-        return "dword"
+        if self.options["f"] in ("win32", "lin32"):
+            return "dword"
+        elif self.options["f"] in ("win64", "lin64"):
+            return "qword"
+        else:
+            self.error(45)
 
     # Takes a register and returns its lowest byte.
     # For when instructions require r8.
@@ -110,7 +163,7 @@ class Parser():
 
     # Adds an empty line to the output if one doesn't exist already.
     def add_pretty(self, segment=".text"):
-        if self.segments[".text"][-1]:
+        if self.segments[segment] and self.segments[segment][-1]:
             self.add(segment=segment)
 
     # Peek at the input list.
@@ -215,6 +268,10 @@ class Parser():
             elif (self.peek()[0][0] == "NAME") and not self.in_func:
                 self.do_extern()
 
+            # Calling convention keywords indicate the start of a new function.
+            elif self.peek()[0][0] in ("STDCALL", "CDECL"):
+                self.do_func()
+
             elif self.peek()[0][0] == "AUTO":
                 self.do_auto()
             elif self.peek()[0][0] == "EXTRN":
@@ -265,7 +322,17 @@ class Parser():
         if self.compounds:
             self.error(900)
 
-        # Add all of the segments together!
+        # Add prototyped functions.
+        for i in [i for i in self.funcs.keys() if self.funcs[i]["prototype"]]:
+            self.outp.append("extern {}".format(self.funcs[i]["tname"]))
+        self.outp.append("")
+
+        # Make all functions global.
+        for i in [i for i in self.funcs.keys() if not self.funcs[i]["prototype"]]:
+            self.outp.append("global {}".format(self.funcs[i]["tname"]))
+        self.outp.append("")
+
+        # Add all of the segments together.
         for i in self.segments:
             self.outp.append("segment {}".format(i))
             self.outp.append("")
@@ -453,40 +520,39 @@ class Parser():
                 self.error()
 
     def do_func(self):
-        if not self.findinline("SC"):
-            self.error()
 
+        # A temporary dictionary to hold the functions properties.
+        _func = {"name": "",
+                 "call": "CDECL",
+                 "prototype": False,
+                 "param": 0,
+                 "params": []}
+
+        # If there's no statement, then this is a function prototype.
+        _func["prototype"] = not self.findinline("SC")
+
+
+        # A function cannot be declared inside another function!
         if self.in_func:
-            self.error()
+            self.error(123)
 
+        # See if this function has a calling convention keyword.
+        if self.peek()[0][0] in ("STDCALL", "CDECL"):
+            _func["call"] = self.peek()[0][0]
+            self.discard()
+
+        # Check to see if this name exists already!
         if self.peek()[0][1] in self.names:
-            self.error()
+            self.error(124)
 
         # Save the function's name.
-        fn = self.peek()[0][1]
+        _func["name"] = self.peek()[0][1]
         self.discard()
 
-        # Add the function to the list of compound statements.
-        com = self.push_compound(before="xor {0}, {0}".format(self.a()),
-                                 after="mov {0}, {1}\npop {1}\nret".format(self.sp(), self.bp()),
-                                 func=True)
-
-        # Adjust the start and end points of the function.
-        com["end"] = com["start"]
-        self.l -= 1
-        com["start"] = "_{}".format(fn)
-
-        # Add the function to the output.
-        self.names.append(fn)
-        self.in_func = True
-        #self.add_pretty()
-        self.add("global {}".format(com["start"]))
-        self.add("{}:".format(com["start"]))
-        self.add("push {}".format(self.bp()))
-        self.add("mov {}, {}".format(self.bp(), self.sp()))
-        self.add_pretty()
-
-        # Discard the function's name.
+        if _func["name"] in self.funcs.keys():
+            if not (not _func["prototype"] and self.funcs[_func["name"]]["prototype"]):
+                self.error(554)
+            
 
         # Save space for BP and IP.
         self.param_l = self.word*2
@@ -496,20 +562,25 @@ class Parser():
         if self.peek()[0][0] == "SP":
             self.discard()
         else:
-            self.error()
+            self.error(125)
 
         while True:
             if self.peek()[0][0] == "NAME":
                 if self.peek()[0][1] in self.names:
-                    self.error()
-                self.names.append(self.peek()[0][1])
-                self.param[self.peek()[0][1]] = self.param_l
-                self.param_l += self.word
+                    self.error(126)
+                
+                if not _func["prototype"]:
+                    self.names.append(self.peek()[0][1])
+                    self.param[self.peek()[0][1]] = self.param_l
+                    self.param_l += self.word
+
+                _func["params"].append(self.peek()[0][1])
                 self.discard()
+
             elif self.peek()[0][0] == "EP":
                 pass
             else:
-                self.error()
+                self.error(127)
 
             if self.peek()[0][0] == "COMMA":
                 self.discard()
@@ -517,17 +588,50 @@ class Parser():
                 self.discard()
                 break
             else:
-                self.error()
+                self.error(128)
 
-        if self.peek()[0][0] == "SC":
+        # Set param
+        _func["param"] = len(_func["params"])
+
+        if not _func["prototype"] and self.peek()[0][0] == "SC":
+            self.discard()
+        elif _func["prototype"] and self.peek()[0][0] == "SEMICOLON":
             self.discard()
         else:
-            self.error()
+            self.error(129)
+
+        # Create function's true name used in assembly.
+        if _func["call"] == "CDECL":
+            _func["tname"] = "_{}".format(_func["name"])
+        elif _func["call"] == "STDCALL":
+            _func["tname"] = "_{}@{}".format(_func["name"], _func["param"]*self.word)
+        else:
+            self.error(130)
+
+        if not _func["prototype"]:
+            # Add the function to the list of compound statements.
+            com = self.push_compound(before="xor {0}, {0}".format(self.a()),
+                                     after="mov {0}, {1}\npop {1}\nret".format(self.sp(), self.bp()),
+                                     func=True)
+
+            ## NOTE: Fix this function!!!
+
+            # Adjust the start and end points of the function.
+            com["end"] = com["start"]
+            self.l -= 1
+            com["start"] = _func["tname"]
+
+            # Add the function to the output.
+            self.names.append(_func["name"])
+            self.in_func = True
+            #self.add_pretty()
+            self.add("{}:".format(com["start"]))
+            self.add("push {}".format(self.bp()))
+            self.add("mov {}, {}".format(self.bp(), self.sp()))
+            self.add_pretty()
 
         # Make sure we save how many parameters this function has.
-        self.funcs[fn] = len(self.param.keys())
-
-    # Handles control statements.
+        self.funcs[_func["name"]] = _func
 
     def do_return(self):
         # Get rid of the if token.
@@ -827,13 +931,15 @@ class Parser():
 
             if math_list[0][0] == "FUNC":
 
-                self.add("call _{}".format(math_list[0][1]))
+                # Make sure this function exists!
+                if math_list[0][1] not in self.funcs.keys():
+                    self.error(701)
+
+                self.add("call {}".format(self.funcs[math_list[0][1]]["tname"]))
 
                 # Only clean up the stack if needed.
-                if args and "@" not in math_list[0][1]:
+                if args and self.funcs[math_list[0][1]]["call"] == "CDECL":
                     self.add("add {}, {}".format(self.sp(), args*self.word))
-
-                #self.add()
 
                 args = 0
                 math_list = math_list[1:]
