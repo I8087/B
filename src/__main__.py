@@ -88,8 +88,8 @@ while a:
 
 # Get a glob of all the files in the B standard library.
 # NOTE: We'll need to do this after we go throught the command line.
-lib_glob = os.path.join(b_dir, "lib", "libb", "*.b")
-lib_h_glob = os.path.join(b_dir, "lib", "libb", "*.h")
+lib_glob = os.path.join(b_dir, "lib", "core", "*.b")
+lib_h_glob = os.path.join(b_dir, "lib", "core", "*.h")
 sys_glob = os.path.join(b_dir, "lib", options["f"], "*.b")
 sys_h_glob = os.path.join(b_dir, "lib", options["f"], "*.h")
 if options["v"]:
