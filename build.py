@@ -54,7 +54,7 @@ for i in glob.glob(os.path.join("lib", "*")):
     os.mkdir(os.path.join(os.getcwd(), "dist", i))
 
 # Copy the standard library.
-for i in glob.glob(os.path.join("lib", "**", "*.b")):
+for i in glob.glob(os.path.join("lib", "**", "*.*")):
     shutil.copy2(i,
                  os.path.join(os.getcwd(), "dist", i))
 
