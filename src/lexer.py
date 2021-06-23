@@ -1,6 +1,6 @@
 """New B lexer."""
 
-import string
+import sys, string
 
 class Lexer():
 
@@ -243,7 +243,7 @@ class Lexer():
         print(self.linp[self.line-1].replace("\t", " "))
         print((self.char-1)*" "+"^")
         print("Lexer Error #{} at {}:{}\n".format(err_num, self.line, self.char))
-        exit(err_num)
+        sys.exit(err_num)
 
     def lexer(self):
 

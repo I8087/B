@@ -1,5 +1,7 @@
 """B Compiler RPN."""
 
+import sys
+
 class RPN():
 
     def __init__(self, inp, linp, funcs):
@@ -71,7 +73,7 @@ class RPN():
         print(self.linp[l-1].replace("\t", " "))
         print((c-1)*" "+"^")
         print("RPN Error #{} at {}:{}\n".format(err_num, l, c))
-        exit(err_num)
+        sys.exit(err_num)
 
     # Appends the output.
     def add(self, o):

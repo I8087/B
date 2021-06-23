@@ -1,6 +1,6 @@
 """New B parser."""
 
-import collections
+import sys, collections
 
 from rpn import RPN
 
@@ -155,7 +155,7 @@ class Parser():
         print(self.linp[l-1].replace("\t", " "))
         print((c-1)*" "+"^")
         print("Parser Error #{} at {}:{}\n".format(err_num, l, c))
-        exit(err_num)
+        sys.exit(err_num)
 
     # Appends the assembly output.
     def add(self, o="", segment=".text"):
@@ -427,7 +427,7 @@ class Parser():
                     self.error()
                 self.names.append(self.peek()[0][1])
                 self.extrn.append(self.peek()[0][1])
-                self.add("extern _{}".format(self.peek()[0][1]))
+                #self.add("extern _{}".format(self.peek()[0][1]))
                 self.discard()
             else:
                 self.error()
