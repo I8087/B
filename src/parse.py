@@ -3,6 +3,7 @@
 import sys, collections
 
 from rpn import RPN
+from error import Error
 
 class Parser():
 
@@ -149,13 +150,13 @@ class Parser():
             self.error(8)
 
     # Handles parser error.
-    def error(self, err_num=0):
+    def error(self, err=0):
         l = self.peek()[0][2]
         c = self.peek()[0][3]
         print(self.linp[l-1].replace("\t", " "))
         print((c-1)*" "+"^")
-        print("Parser Error #{} at {}:{}\n".format(err_num, l, c))
-        sys.exit(err_num)
+        print("Parser Error #{} at {}:{}\n{}\n".format(int(err), l, c, err))
+        sys.exit(int(err))
 
     # Appends the assembly output.
     def add(self, o="", segment=".text"):
@@ -454,7 +455,7 @@ class Parser():
 
                 # Make sure this variable isn't already declared.
                 if var in self.names:
-                    self.error()
+                    self.error(Error.REDFINED_VAR)
 
                 # Check to see if we need to allocate a vector on the stack.
                 if self.peek()[0][0] == "SB":
@@ -543,7 +544,7 @@ class Parser():
 
         # Check to see if this name exists already!
         if self.peek()[0][1] in self.names:
-            self.error(124)
+            self.error(Error.REDFINED_FUNC)
 
         # Save the function's name.
         _func["name"] = self.peek()[0][1]
@@ -674,7 +675,7 @@ class Parser():
         if com:
             self.add("jmp {}".format(com["end"]))
         else:
-            self.error(877)
+            self.error(Error.RETURN_OUTSIDE_FUNC)
 
 
     def do_break(self):
@@ -685,14 +686,14 @@ class Parser():
         if self.peek()[0][0] == "SEMICOLON":
             self.discard()
         else:
-            self.error(87)
+            self.error(Error.EXPECT_SC)
 
         # Get the end of the inner most loop statement.
         com = self.get_loop()
 
         # Can't break if you're not inside a loop statement!
         if not com:
-            self.error(432)
+            self.error(Error.BREAK_OUTSIDE_LOOP)
 
         self.add("jmp {}".format(com["end"]))
 
@@ -705,14 +706,14 @@ class Parser():
         if self.peek()[0][0] == "SEMICOLON":
             self.discard()
         else:
-            self.error(87)
+            self.error(Error.EXPECT_SC)
 
         # Get the end of the inner most loop statement.
         com = self.get_loop()
 
         # Can't break if you're not inside a loop statement!
         if not com:
-            self.error(434)
+            self.error(Error.NEXT_OUTSIDE_LOOP)
 
         self.add("jmp {}".format(com["start"]))
 
@@ -742,7 +743,7 @@ class Parser():
 
         # Make sure there's a (
         if self.peek()[0][0] != "SP":
-            self.error()
+            self.error(Error.EXPECT_SP)
 
         # Discard (
         self.discard()
@@ -798,7 +799,7 @@ class Parser():
 
         # Make sure there's a (
         if self.peek()[0][0] != "SP":
-            self.error()
+            self.error(Error.EXPECT_SP)
 
         # Discard (
         self.discard()
